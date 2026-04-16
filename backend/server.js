@@ -267,14 +267,77 @@ app.delete('/admin/categories/:name', authenticateJWT, ensureAdmin, async (req, 
 
 app.get('/passwords', authenticateJWT, async (req, res) => {
   try {
+    // Admin vê tudo
+    if (req.user.role === 'admin') {
+      const { data, error } = await supabase
+        .from('password_entries')
+        .select('id, name, username, url, category, notes')
+        .order('name');
+      if (error) throw error;
+      return res.json(data);
+    }
+
+    // Usuário comum: verifica se tem permissões restritas
+    const { data: perms } = await supabase
+      .from('user_permissions')
+      .select('entry_id')
+      .eq('user_id', req.user.id);
+
+    // Sem restrições cadastradas → vê tudo
+    if (!perms || perms.length === 0) {
+      const { data, error } = await supabase
+        .from('password_entries')
+        .select('id, name, username, url, category, notes')
+        .order('name');
+      if (error) throw error;
+      return res.json(data);
+    }
+
+    // Com restrições → vê só as permitidas
+    const allowedIds = perms.map(p => p.entry_id);
     const { data, error } = await supabase
       .from('password_entries')
       .select('id, name, username, url, category, notes')
+      .in('id', allowedIds)
       .order('name');
     if (error) throw error;
     res.json(data);
   } catch {
     res.status(500).json({ error: 'Erro ao buscar senhas' });
+  }
+});
+
+app.get('/admin/users/:id/permissions', authenticateJWT, ensureAdmin, async (req, res) => {
+  try {
+    const { data, error } = await supabase
+      .from('user_permissions')
+      .select('entry_id')
+      .eq('user_id', req.params.id);
+    if (error) throw error;
+    res.json(data.map(p => p.entry_id));
+  } catch {
+    res.status(500).json({ error: 'Erro ao buscar permissoes' });
+  }
+});
+
+app.put('/admin/users/:id/permissions', authenticateJWT, ensureAdmin, async (req, res) => {
+  try {
+    const { entry_ids } = req.body; // array de IDs ou [] para irrestrito
+    const userId = req.params.id;
+
+    // Remove permissões anteriores
+    await supabase.from('user_permissions').delete().eq('user_id', userId);
+
+    // Insere novas (se houver)
+    if (entry_ids && entry_ids.length > 0) {
+      const rows = entry_ids.map(entry_id => ({ user_id: userId, entry_id }));
+      const { error } = await supabase.from('user_permissions').insert(rows);
+      if (error) throw error;
+    }
+
+    res.json({ message: 'Permissoes atualizadas' });
+  } catch {
+    res.status(500).json({ error: 'Erro ao salvar permissoes' });
   }
 });
 

@@ -736,6 +736,37 @@
   </div>
 </div>
 
+<!-- ══ MODAL: PERMISSÕES ══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="permModal" style="display:none;z-index:1100" onclick="closePermModal(event)">
+  <div class="modal-box" style="max-width:560px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title"><i class="bi bi-shield-check"></i> Permissões de acesso</div>
+        <div class="modal-sub" id="permModalSub">Usuário</div>
+      </div>
+      <button class="btn-icon" onclick="closePermModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;padding:0.75rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:8px">
+        <div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text)">Acesso irrestrito</div>
+          <div style="font-size:0.75rem;color:var(--muted)">Usuário vê todas as senhas</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:0.5rem;cursor:pointer">
+          <input type="checkbox" id="permUnrestricted" onchange="togglePermRestricted()" style="width:16px;height:16px;accent-color:var(--cyan)">
+          <span style="font-size:0.8rem;color:var(--muted)">Irrestrito</span>
+        </label>
+      </div>
+      <div id="permEntriesList" style="max-height:400px;overflow-y:auto"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary-dark" style="margin-top:0" onclick="savePermissions()">
+        <i class="bi bi-check-lg"></i> Salvar permissões
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- ══ MODAL: SESSÃO (usuário comum) ═════════════════════════════════════════ -->
 <div class="modal-overlay" id="sessionModal" style="display:none;z-index:1100" onclick="closeSessionModal(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -1605,6 +1636,12 @@
         const tdR = document.createElement('td'); tdR.textContent = u.role;
         const tdA = document.createElement('td');
 
+        const permBtn = document.createElement('button');
+        permBtn.className = 'btn-icon';
+        permBtn.title = 'Permissões';
+        permBtn.innerHTML = '<i class="bi bi-shield-check" style="color:var(--cyan)"></i>';
+        permBtn.addEventListener('click', () => openPermModal(u));
+
         const delBtn = document.createElement('button');
         delBtn.className = 'btn-danger-sm';
         delBtn.textContent = 'Remover';
@@ -1615,6 +1652,8 @@
           else showAlert(dd.error || 'Erro ao remover', 'danger');
         });
 
+        tdA.style.display = 'flex'; tdA.style.gap = '0.4rem';
+        tdA.appendChild(permBtn);
         tdA.appendChild(delBtn);
         tr.append(tdN, tdU, tdD, tdR, tdA);
         tbody.appendChild(tr);
@@ -1688,6 +1727,123 @@
         await loadPasswords();
       }
     } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  // ─── Modal de Permissões ──────────────────────────────────────────────────
+  let permUserId = null;
+
+  async function openPermModal(u) {
+    permUserId = u.id;
+    document.getElementById('permModalSub').textContent = u.full_name + ' — ' + u.username;
+    document.getElementById('permModal').style.display = 'flex';
+
+    const list = document.getElementById('permEntriesList');
+    list.innerHTML = '<p style="color:var(--muted);font-size:0.85rem">Carregando...</p>';
+
+    // Busca permissões atuais e todas as senhas em paralelo
+    const [{ data: allowedIds }, { data: entries }] = await Promise.all([
+      apiFetch(`/admin/users/${u.id}/permissions`).then(r => ({ data: r.data })),
+      apiFetch('/admin/passwords').then(r => ({ data: r.data }))
+    ]);
+
+    const unrestricted = allowedIds.length === 0;
+    document.getElementById('permUnrestricted').checked = unrestricted;
+
+    // Agrupa por categoria
+    const byCategory = {};
+    entries.forEach(e => {
+      if (!byCategory[e.category]) byCategory[e.category] = [];
+      byCategory[e.category].push(e);
+    });
+
+    list.innerHTML = '';
+    list.style.opacity = unrestricted ? '0.4' : '1';
+    list.style.pointerEvents = unrestricted ? 'none' : '';
+
+    Object.entries(byCategory).forEach(([cat, items]) => {
+      const catDiv = document.createElement('div');
+      catDiv.style.marginBottom = '1rem';
+
+      const catHeader = document.createElement('div');
+      catHeader.style.cssText = 'display:flex;align-items:center;gap:0.5rem;margin-bottom:0.4rem';
+
+      const catCheck = document.createElement('input');
+      catCheck.type = 'checkbox';
+      catCheck.style.cssText = 'width:15px;height:15px;accent-color:var(--cyan);cursor:pointer';
+      const catAllChecked = items.every(e => allowedIds.includes(e.id));
+      catCheck.checked = unrestricted || catAllChecked;
+      catCheck.addEventListener('change', () => {
+        catDiv.querySelectorAll('input[data-entry]').forEach(cb => cb.checked = catCheck.checked);
+      });
+
+      const catLabel = document.createElement('span');
+      catLabel.style.cssText = 'font-size:0.75rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em';
+      catLabel.textContent = CAT_DISPLAY[cat] || cat;
+
+      catHeader.appendChild(catCheck);
+      catHeader.appendChild(catLabel);
+      catDiv.appendChild(catHeader);
+
+      items.forEach(e => {
+        const row = document.createElement('label');
+        row.style.cssText = 'display:flex;align-items:center;gap:0.6rem;padding:0.4rem 0.5rem;border-radius:6px;cursor:pointer';
+        row.onmouseover = () => row.style.background = 'var(--card)';
+        row.onmouseout  = () => row.style.background = '';
+
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.dataset.entry = e.id;
+        cb.style.cssText = 'width:14px;height:14px;accent-color:var(--cyan)';
+        cb.checked = unrestricted || allowedIds.includes(e.id);
+        cb.addEventListener('change', () => {
+          const allChecked = [...catDiv.querySelectorAll('input[data-entry]')].every(c => c.checked);
+          catCheck.checked = allChecked;
+        });
+
+        const nameEl = document.createElement('span');
+        nameEl.style.cssText = 'font-size:0.85rem;color:var(--text)';
+        nameEl.textContent = e.name;
+
+        row.appendChild(cb);
+        row.appendChild(nameEl);
+        catDiv.appendChild(row);
+      });
+
+      list.appendChild(catDiv);
+    });
+  }
+
+  function closePermModal(e) {
+    if (e && e.target !== document.getElementById('permModal')) return;
+    document.getElementById('permModal').style.display = 'none';
+    permUserId = null;
+  }
+
+  function togglePermRestricted() {
+    const unrestricted = document.getElementById('permUnrestricted').checked;
+    const list = document.getElementById('permEntriesList');
+    list.style.opacity = unrestricted ? '0.4' : '1';
+    list.style.pointerEvents = unrestricted ? 'none' : '';
+    list.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = unrestricted);
+  }
+
+  async function savePermissions() {
+    const unrestricted = document.getElementById('permUnrestricted').checked;
+    let entry_ids = [];
+
+    if (!unrestricted) {
+      document.getElementById('permEntriesList').querySelectorAll('input[data-entry]').forEach(cb => {
+        if (cb.checked) entry_ids.push(cb.dataset.entry);
+      });
+    }
+
+    const { res, data } = await apiFetch(`/admin/users/${permUserId}/permissions`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ entry_ids })
+    });
+    showAlert(data.message || data.error, res.ok ? 'success' : 'danger');
+    if (res.ok) document.getElementById('permModal').style.display = 'none';
   }
 
   // Gerenciar categorias (admin)

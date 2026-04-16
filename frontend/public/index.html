@@ -1122,6 +1122,8 @@
     if (currentUser.role === 'admin') {
       rb.classList.add('admin');
       document.getElementById('btnAdmin').style.display = 'flex';
+    } else {
+      document.getElementById('btnAdmin').style.display = 'none';
     }
 
     await loadCategories();

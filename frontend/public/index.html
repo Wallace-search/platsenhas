@@ -1,0 +1,1754 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>S7 Security - Plataforma de Senhas</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+  <style>
+    :root {
+      --dark: #0f1117;
+      --surface: #1a1f2e;
+      --card: #242938;
+      --border: #2e3550;
+      --blue: #0066cc;
+      --cyan: #00d4ff;
+      --green: #10b981;
+      --red: #ef4444;
+      --yellow: #f59e0b;
+      --text: #e2e8f0;
+      --muted: #8892a4;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--dark);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0.875rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .navbar-brand {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+    }
+
+    .navbar-right {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .user-chip {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 0.3rem 0.9rem;
+      font-size: 0.8rem;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .role-badge {
+      background: var(--blue);
+      color: white;
+      border-radius: 10px;
+      padding: 0.1rem 0.5rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+    }
+
+    .role-badge.admin { background: var(--red); }
+
+    /* ── Layout ── */
+    .app-layout {
+      display: flex;
+      min-height: calc(100vh - 57px);
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 220px;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      padding: 1.5rem 0;
+      flex-shrink: 0;
+    }
+
+    .sidebar-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: var(--muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0 1.25rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .cat-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      width: 100%;
+      padding: 0.65rem 1.25rem;
+      background: none;
+      border: none;
+      color: var(--muted);
+      font-size: 0.875rem;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.15s;
+      border-left: 3px solid transparent;
+    }
+
+    .cat-btn:hover { color: var(--text); background: var(--card); }
+    .cat-btn.active { color: var(--cyan); background: rgba(0,212,255,0.06); border-left-color: var(--cyan); }
+    .cat-btn i { font-size: 1rem; width: 18px; text-align: center; }
+
+    .sidebar-divider { border-color: var(--border); margin: 1rem 1.25rem; }
+
+    /* ── Main Content ── */
+    .main-content {
+      flex: 1;
+      padding: 1.5rem 2rem;
+      overflow-y: auto;
+    }
+
+    .search-bar {
+      position: relative;
+      margin-bottom: 1.5rem;
+    }
+
+    .search-bar input {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      padding: 0.75rem 1rem 0.75rem 2.75rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .search-bar input::placeholder { color: var(--muted); }
+    .search-bar input:focus { border-color: var(--blue); }
+    .search-bar .search-icon {
+      position: absolute;
+      left: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+    }
+
+    /* ── Password Cards Grid ── */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 1rem;
+    }
+
+    .pw-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .pw-card:hover {
+      border-color: var(--blue);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+    }
+
+    .pw-card-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .pw-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+
+    .pw-icon.email     { background: rgba(16,185,129,0.15); color: var(--green); }
+    .pw-icon.social    { background: rgba(0,102,204,0.15);  color: #60a5fa; }
+    .pw-icon.ads       { background: rgba(245,158,11,0.15); color: var(--yellow); }
+    .pw-icon.analytics { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .pw-icon.auto      { background: rgba(236,72,153,0.15); color: #f472b6; }
+    .pw-icon.design    { background: rgba(0,212,255,0.15);  color: var(--cyan); }
+    .pw-icon.other     { background: rgba(100,116,139,0.15);color: #94a3b8; }
+
+    .pw-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+      line-height: 1.2;
+    }
+
+    .pw-user {
+      font-size: 0.75rem;
+      color: var(--muted);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .pw-note {
+      font-size: 0.72rem;
+      color: var(--yellow);
+      background: rgba(245,158,11,0.1);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      display: inline-block;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Empty State ── */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--muted);
+    }
+
+    .empty-state i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+    /* ── Login ── */
+    .login-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      background: var(--dark);
+    }
+
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.5rem;
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .login-card h2 { font-size: 1.4rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--text); }
+    .login-card p  { color: var(--muted); font-size: 0.85rem; margin-bottom: 2rem; }
+
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--muted); margin-bottom: 0.4rem; }
+
+    .form-control-dark {
+      width: 100%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.7rem 1rem;
+      font-size: 0.9rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .form-control-dark::placeholder { color: var(--muted); }
+    .form-control-dark:focus { border-color: var(--blue); }
+
+    select.form-control-dark option { background: var(--card); }
+
+    /* ── Buttons ── */
+    .btn-primary-dark {
+      width: 100%;
+      background: var(--blue);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 0.75rem;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-primary-dark:hover { background: #0052a3; }
+
+    .btn-danger-sm {
+      background: rgba(239,68,68,0.15);
+      color: var(--red);
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px;
+      padding: 0.3rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-danger-sm:hover { background: var(--red); color: white; }
+
+    .btn-icon {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      padding: 0.3rem;
+      border-radius: 4px;
+      transition: color 0.2s;
+    }
+
+    .btn-icon:hover { color: var(--text); }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 1rem;
+    }
+
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      padding: 1.5rem 1.5rem 0;
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .modal-title { font-size: 1.1rem; font-weight: 700; color: var(--text); }
+    .modal-sub   { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+    .modal-body   { padding: 1.25rem 1.5rem; }
+    .modal-footer { padding: 0 1.5rem 1.5rem; display: flex; gap: 0.75rem; }
+
+    /* ── Reveal Box ── */
+    .reveal-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .reveal-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      gap: 0.5rem;
+    }
+
+    .reveal-row:last-child { border-bottom: none; }
+    .reveal-label { font-size: 0.72rem; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; min-width: 80px; }
+    .reveal-value { font-size: 0.88rem; color: var(--text); font-family: monospace; word-break: break-all; flex: 1; }
+    .reveal-value.password-hidden { filter: blur(5px); user-select: none; }
+
+    .access-code-box {
+      background: rgba(0,212,255,0.05);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-top: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .access-code-label { font-size: 0.75rem; color: var(--cyan); font-weight: 600; }
+    .access-code-value { font-size: 1rem; font-weight: 700; color: var(--cyan); font-family: monospace; letter-spacing: 0.1em; }
+
+    /* ── Alert ── */
+    .alert-bar {
+      position: fixed;
+      top: 70px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9999;
+      min-width: 300px;
+      max-width: 500px;
+    }
+
+    .alert-item {
+      padding: 0.75rem 1.25rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      margin-bottom: 0.5rem;
+    }
+
+    .alert-success { background: #064e3b; color: #6ee7b7; border: 1px solid #065f46; }
+    .alert-danger  { background: #7f1d1d; color: #fca5a5; border: 1px solid #991b1b; }
+    .alert-info    { background: #164e63; color: #67e8f9; border: 1px solid #0e7490; }
+
+    /* ── Admin Table ── */
+    .admin-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    .admin-table th {
+      background: var(--card);
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .admin-table td {
+      padding: 0.65rem 1rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text);
+      vertical-align: middle;
+    }
+
+    .admin-table tr:hover td { background: var(--card); }
+
+    /* ── Tabs (admin) ── */
+    .tab-pills { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+
+    .tab-pill {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: 8px;
+      padding: 0.45rem 1rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .tab-pill.active { background: var(--blue); border-color: var(--blue); color: white; }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .main-content { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Alert bar -->
+<div class="alert-bar" id="alertBar"></div>
+
+<!-- ══ LOGIN ══════════════════════════════════════════════════════════════════ -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h2><i class="bi bi-shield-lock" style="color:var(--cyan)"></i> S7 Security</h2>
+    <p>Plataforma de senhas Seven7th Digital</p>
+
+    <!-- Etapa 1: email -->
+    <div id="loginStep1">
+      <div class="form-group">
+        <label>Seu e-mail corporativo</label>
+        <input class="form-control-dark" type="email" id="loginEmail" placeholder="seu@email.com">
+      </div>
+      <button class="btn-primary-dark" onclick="sendOTP()">
+        <i class="bi bi-send"></i> Enviar código de acesso
+      </button>
+    </div>
+
+    <!-- Etapa 2: código OTP -->
+    <div id="loginStep2" style="display:none">
+      <p style="color:var(--green);font-size:0.85rem;margin-bottom:1.25rem">
+        <i class="bi bi-check-circle"></i> Código enviado para <strong id="otpEmailLabel"></strong>
+      </p>
+      <div class="form-group">
+        <label>Código de 6 dígitos</label>
+        <input class="form-control-dark" type="text" id="loginCode" placeholder="000000"
+               maxlength="6" inputmode="numeric" style="letter-spacing:0.3em;font-size:1.2rem;text-align:center">
+      </div>
+      <button class="btn-primary-dark" onclick="verifyOTP()">
+        <i class="bi bi-unlock"></i> Verificar e entrar
+      </button>
+      <button onclick="backToEmail()" style="width:100%;background:none;border:none;color:var(--muted);font-size:0.8rem;margin-top:0.75rem;cursor:pointer">
+        ← Usar outro e-mail
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ APP ════════════════════════════════════════════════════════════════════ -->
+<div id="appScreen" style="display:none">
+
+  <!-- Navbar -->
+  <div class="navbar">
+    <a class="navbar-brand" href="#">
+      <i class="bi bi-shield-lock"></i> S7 Security
+    </a>
+    <div class="navbar-right">
+      <div class="user-chip" id="userChip" style="display:none">
+        <i class="bi bi-person-circle"></i>
+        <span id="userLabel">-</span>
+        <span class="role-badge" id="roleLabel">user</span>
+      </div>
+      <button class="btn-icon" id="btnAdmin" style="display:none" title="Admin" onclick="openAdmin()">
+        <i class="bi bi-gear-fill" style="font-size:1.1rem;color:var(--muted)"></i>
+      </button>
+      <button class="btn-icon" id="btnLogout" title="Logout">
+        <i class="bi bi-box-arrow-right" style="font-size:1.1rem"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Layout -->
+  <div class="app-layout">
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+      <div class="sidebar-label">Categorias</div>
+      <div id="sidebarCats"></div>
+      <div id="sidebarQuickAccess" style="display:none">
+        <hr class="sidebar-divider">
+        <div class="sidebar-label">Acesso rápido</div>
+        <button class="cat-btn" onclick="document.getElementById('searchInput').focus()">
+          <i class="bi bi-search"></i> Buscar
+        </button>
+      </div>
+    </div>
+
+    <!-- Main -->
+    <div class="main-content">
+
+      <!-- Estado vazio: sem sessão -->
+      <div id="noSessionState" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center">
+        <i class="bi bi-shield-lock" style="font-size:3.5rem;color:var(--cyan);margin-bottom:1.25rem"></i>
+        <p style="font-size:1.15rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">Acesso protegido</p>
+        <p style="color:var(--muted);font-size:0.9rem;margin-bottom:2rem">Informe seu squad e motivo para revelar as senhas disponíveis</p>
+        <button class="btn-primary-dark" style="width:auto;padding:0.75rem 2.5rem;font-size:1rem" onclick="openSessionModal()">
+          <i class="bi bi-unlock"></i> Revelar senhas
+        </button>
+      </div>
+
+      <!-- Estado: sessão ativa, aguardando escolha de categoria -->
+      <div id="selectCatState" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh;text-align:center">
+        <i class="bi bi-grid" style="font-size:3rem;color:var(--cyan);margin-bottom:1.25rem"></i>
+        <p style="font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:0.5rem">Selecione uma categoria</p>
+        <p style="color:var(--muted);font-size:0.9rem">Escolha uma categoria na barra lateral para revelar as senhas</p>
+      </div>
+
+      <!-- Contador de sessão -->
+      <div id="sessionCountdownBar" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:0.6rem 1rem;margin-bottom:1rem;align-items:center;justify-content:space-between">
+        <span style="font-size:0.8rem;color:var(--muted)"><i class="bi bi-clock"></i> Senhas visíveis por</span>
+        <span id="sessionCountdownValue" style="font-size:0.95rem;font-weight:700;color:var(--red);font-family:monospace">60s</span>
+      </div>
+
+      <!-- Busca e cards -->
+      <div id="searchBarWrapper" class="search-bar">
+        <i class="bi bi-search search-icon"></i>
+        <input type="text" id="searchInput" placeholder="Buscar serviço..." oninput="renderCards()">
+      </div>
+      <div class="cards-grid" id="cardsGrid"></div>
+
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL: ACESSO A SENHA ═════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="accessModal" style="display:none" onclick="closeAccessModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalServiceName">Serviço</div>
+        <div class="modal-sub">Preencha seus dados para acessar a senha</div>
+      </div>
+      <button class="btn-icon" onclick="closeAccessModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+
+    <!-- Formulário de identificação -->
+    <div class="modal-body" id="accessFormSection">
+      <div class="form-group">
+        <label>Acessando como</label>
+        <input class="form-control-dark" type="text" id="accessName" readonly
+               style="opacity:0.6;cursor:not-allowed;background:var(--dark)">
+      </div>
+      <div class="form-group">
+        <label>Squad</label>
+        <select class="form-control-dark" id="accessSquad">
+          <option value="">Selecione...</option>
+          <option value="T1">T1</option>
+          <option value="T2">T2</option>
+          <option value="T3">T3</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Motivo do acesso <span style="color:var(--muted)">(opcional)</span></label>
+        <input class="form-control-dark" type="text" id="accessReason" placeholder="Ex: Configurar campanha">
+      </div>
+    </div>
+    <div class="modal-footer" id="accessFormFooter">
+      <button class="btn-primary-dark" style="margin-top:0" onclick="submitAccess()">
+        <i class="bi bi-unlock"></i> Revelar senha
+      </button>
+    </div>
+
+    <!-- Resultado -->
+    <div id="accessResultSection" style="display:none">
+      <div class="modal-body">
+        <div class="reveal-box">
+          <div class="reveal-row">
+            <span class="reveal-label">Usuário</span>
+            <span class="reveal-value" id="revealUser">-</span>
+            <button class="btn-icon" onclick="copyText('revealUser')" title="Copiar"><i class="bi bi-copy"></i></button>
+          </div>
+          <div class="reveal-row">
+            <span class="reveal-label">Senha</span>
+            <span class="reveal-value password-hidden" id="revealPass">-</span>
+            <button class="btn-icon" onclick="togglePassword()" title="Mostrar/ocultar" id="togglePassBtn"><i class="bi bi-eye"></i></button>
+            <button class="btn-icon" onclick="copyText('revealPass')" title="Copiar"><i class="bi bi-copy"></i></button>
+          </div>
+          <div class="reveal-row" id="revealUrlRow">
+            <span class="reveal-label">Link</span>
+            <span class="reveal-value" id="revealUrl">-</span>
+            <button class="btn-icon" onclick="copyText('revealUrl')" title="Copiar"><i class="bi bi-copy"></i></button>
+          </div>
+          <div class="reveal-row" id="revealNotesRow">
+            <span class="reveal-label">Obs</span>
+            <span class="reveal-value" id="revealNotes" style="color:var(--yellow)">-</span>
+          </div>
+        </div>
+
+        <div class="access-code-box">
+          <div>
+            <div class="access-code-label"><i class="bi bi-shield-check"></i> Código de acesso (único)</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem">Registrado no log de auditoria</div>
+          </div>
+          <div class="access-code-value" id="accessCodeDisplay">—</div>
+        </div>
+
+        <div id="countdownBar" style="display:none;margin-top:1rem;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.6rem 1rem;align-items:center;justify-content:space-between">
+          <span style="font-size:0.78rem;color:var(--muted)"><i class="bi bi-clock"></i> Senha disponível por</span>
+          <span id="countdownValue" style="font-size:0.9rem;font-weight:700;color:var(--red);font-family:monospace">60s</span>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-primary-dark" style="margin-top:0;background:var(--card);border:1px solid var(--border)" onclick="closeAccessModal()">Fechar</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL: EDITAR SENHA ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="editModal" style="display:none;z-index:1100" onclick="closeEditModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title"><i class="bi bi-pencil"></i> Editar Senha</div>
+      <button class="btn-icon" onclick="closeEditModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="editId">
+      <div class="form-group">
+        <label>Nome do serviço</label>
+        <input class="form-control-dark" type="text" id="editName" required>
+      </div>
+      <div class="form-group">
+        <label>Categoria</label>
+        <select class="form-control-dark" id="editCategory" required>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Usuário / E-mail</label>
+        <input class="form-control-dark" type="text" id="editUsername">
+      </div>
+      <div class="form-group">
+        <label>Nova senha <span style="color:var(--muted)">(deixe vazio para não alterar)</span></label>
+        <input class="form-control-dark" type="text" id="editPassword" placeholder="Nova senha...">
+      </div>
+      <div class="form-group">
+        <label>URL</label>
+        <input class="form-control-dark" type="text" id="editUrl">
+      </div>
+      <div class="form-group">
+        <label>Observações</label>
+        <input class="form-control-dark" type="text" id="editNotes">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary-dark" style="margin-top:0" onclick="saveEdit()">
+        <i class="bi bi-check-lg"></i> Salvar alterações
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: SESSÃO (usuário comum) ═════════════════════════════════════════ -->
+<div class="modal-overlay" id="sessionModal" style="display:none;z-index:1100" onclick="closeSessionModal(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title"><i class="bi bi-unlock"></i> Revelar senhas</div>
+        <div class="modal-sub">Preencha para liberar o acesso por 60 segundos</div>
+      </div>
+      <button class="btn-icon" onclick="closeSessionModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Acessando como</label>
+        <input class="form-control-dark" type="text" id="sessionName" readonly
+               style="opacity:0.6;cursor:not-allowed;background:var(--dark)">
+      </div>
+      <div class="form-group">
+        <label>Squad</label>
+        <select class="form-control-dark" id="sessionSquadSelect">
+          <option value="">Selecione...</option>
+          <option value="T1">T1</option>
+          <option value="T2">T2</option>
+          <option value="T3">T3</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Motivo do acesso <span style="color:var(--muted)">(opcional)</span></label>
+        <input class="form-control-dark" type="text" id="sessionReasonInput" placeholder="Ex: Configurar campanha">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary-dark" style="margin-top:0" onclick="startSession()">
+        <i class="bi bi-eye"></i> Revelar senhas
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: ADMIN ══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="adminModal" style="display:none" onclick="closeAdminModal(event)">
+  <div class="modal-box" style="max-width:800px" onclick="event.stopPropagation()">
+    <div class="modal-header">
+      <div class="modal-title"><i class="bi bi-gear"></i> Painel Admin</div>
+      <button class="btn-icon" onclick="closeAdminModal()"><i class="bi bi-x-lg"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="tab-pills">
+        <button class="tab-pill active" onclick="showAdminTab('tabAddPw', this)">Adicionar Senha</button>
+        <button class="tab-pill" onclick="showAdminTab('tabPasswords', this); loadAdminPasswords()">Senhas</button>
+        <button class="tab-pill" onclick="showAdminTab('tabCategories', this); loadAdminCategories()">Categorias</button>
+        <button class="tab-pill" onclick="showAdminTab('tabUsers', this); loadAdminUsers()">Usuários</button>
+        <button class="tab-pill" onclick="showAdminTab('tabAudit', this); loadAdminAudit()">Auditoria</button>
+        <button class="tab-pill" onclick="showAdminTab('tabNewUser', this)">Criar Usuário</button>
+      </div>
+
+      <!-- Tab: Adicionar senha -->
+      <div class="tab-panel active" id="tabAddPw">
+        <form id="addPwForm">
+          <div class="form-group">
+            <label>Nome do serviço</label>
+            <input class="form-control-dark" type="text" id="apName" placeholder="Ex: Google Ads" required>
+          </div>
+          <div class="form-group">
+            <label>Categoria</label>
+            <select class="form-control-dark" id="apCategory" required>
+              <option value="">Selecione...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Usuário / E-mail</label>
+            <input class="form-control-dark" type="text" id="apUsername" placeholder="usuario@email.com">
+          </div>
+          <div class="form-group">
+            <label>Senha</label>
+            <input class="form-control-dark" type="text" id="apPassword" placeholder="Senha do serviço" required>
+          </div>
+          <div class="form-group">
+            <label>URL</label>
+            <input class="form-control-dark" type="text" id="apUrl" placeholder="https://...">
+          </div>
+          <div class="form-group">
+            <label>Observações</label>
+            <input class="form-control-dark" type="text" id="apNotes" placeholder="Ex: CANCELADO, usar com conta X...">
+          </div>
+          <button class="btn-primary-dark" type="submit">Salvar senha</button>
+        </form>
+      </div>
+
+      <!-- Tab: Senhas -->
+      <div class="tab-panel" id="tabPasswords">
+        <div id="adminPasswordsContent"><p style="color:var(--muted)">Carregando...</p></div>
+      </div>
+
+      <!-- Tab: Categorias -->
+      <div class="tab-panel" id="tabCategories">
+        <form id="addCatForm" style="display:flex;gap:0.75rem;margin-bottom:1.25rem">
+          <input class="form-control-dark" type="text" id="catName" placeholder="Nome da nova categoria" required style="flex:1">
+          <button class="btn-primary-dark" type="submit" style="width:auto;white-space:nowrap;padding:0 1.25rem">
+            <i class="bi bi-plus-lg"></i> Criar
+          </button>
+        </form>
+        <div id="adminCategoriesContent"><p style="color:var(--muted)">Carregando...</p></div>
+      </div>
+
+      <!-- Tab: Usuários -->
+      <div class="tab-panel" id="tabUsers">
+        <div id="adminUsersContent"><p style="color:var(--muted)">Carregando...</p></div>
+      </div>
+
+      <!-- Tab: Auditoria -->
+      <div class="tab-panel" id="tabAudit">
+        <div id="adminAuditContent"><p style="color:var(--muted)">Carregando...</p></div>
+      </div>
+
+      <!-- Tab: Criar usuário -->
+      <div class="tab-panel" id="tabNewUser">
+        <form id="createUserForm">
+          <div class="form-group">
+            <label>Nome completo</label>
+            <input class="form-control-dark" type="text" id="nuFullName" placeholder="Ex: João Silva" required>
+          </div>
+          <div class="form-group">
+            <label>E-mail corporativo</label>
+            <input class="form-control-dark" type="email" id="nuUsername" placeholder="usuario@seven7th.com" required>
+          </div>
+          <div class="form-group">
+            <label>Departamento</label>
+            <input class="form-control-dark" type="text" id="nuDept" placeholder="Ex: TI" required>
+          </div>
+          <button class="btn-primary-dark" type="submit">Criar usuário</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // ─── Estado global ────────────────────────────────────────────────────────
+  let currentUser     = null;
+  let allPasswords    = [];
+  let allCategories   = [];
+  let activeCategory  = '';
+  let currentEntryId  = null;
+  let otpEmail        = '';
+  let sessionActive          = false;
+  let sessionCategoryLocked  = false;
+  let sessionSquad           = '';
+  let sessionReason          = '';
+  let sessionInterval        = null;
+
+  const CATEGORY_ICONS = {
+    'Email':           { cls: 'email',    icon: 'bi-envelope' },
+    'Redes Sociais':   { cls: 'social',   icon: 'bi-share' },
+    'Ads':             { cls: 'ads',      icon: 'bi-megaphone' },
+    'SEO & Analytics': { cls: 'analytics',icon: 'bi-bar-chart' },
+    'Automacao':       { cls: 'auto',     icon: 'bi-lightning' },
+    'Design & Midia':  { cls: 'design',   icon: 'bi-palette' },
+    'IA':              { cls: 'analytics',icon: 'bi-robot' },
+    'Armazenamento':   { cls: 'other',    icon: 'bi-folder' },
+    'Educacao':        { cls: 'email',    icon: 'bi-mortarboard' },
+    'Outros':          { cls: 'other',    icon: 'bi-three-dots' },
+  };
+
+  // ─── Utils ────────────────────────────────────────────────────────────────
+  function esc(str) {
+    const d = document.createElement('div');
+    d.appendChild(document.createTextNode(String(str ?? '')));
+    return d.innerHTML;
+  }
+
+  function showAlert(msg, type = 'success') {
+    const bar  = document.getElementById('alertBar');
+    const item = document.createElement('div');
+    item.className = `alert-item alert-${type}`;
+    const icon = type === 'success' ? 'bi-check-circle' : type === 'info' ? 'bi-info-circle' : 'bi-exclamation-circle';
+    item.innerHTML = `<i class="bi ${icon}"></i>`;
+    item.appendChild(document.createTextNode(' ' + msg));
+    bar.appendChild(item);
+    setTimeout(() => item.remove(), 4000);
+  }
+
+  async function apiFetch(url, opts = {}) {
+    const res  = await fetch(url, { credentials: 'same-origin', ...opts });
+    const data = await res.json();
+    return { res, data };
+  }
+
+  function copyText(elId) {
+    const el = document.getElementById(elId);
+    navigator.clipboard.writeText(el.textContent).then(() => showAlert('Copiado!', 'info'));
+  }
+
+  // ─── Auth OTP ─────────────────────────────────────────────────────────────
+  async function sendOTP() {
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!email) return showAlert('Informe o e-mail', 'danger');
+    try {
+      const { res, data } = await apiFetch('/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      if (res.ok) {
+        otpEmail = email;
+        document.getElementById('otpEmailLabel').textContent = email;
+        document.getElementById('loginStep1').style.display = 'none';
+        document.getElementById('loginStep2').style.display = 'block';
+        document.getElementById('loginCode').focus();
+      } else {
+        showAlert(data.error || 'Erro ao enviar código', 'danger');
+      }
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  async function verifyOTP() {
+    const code = document.getElementById('loginCode').value.trim();
+    if (!code) return showAlert('Informe o código', 'danger');
+    try {
+      const { res, data } = await apiFetch('/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: otpEmail, code })
+      });
+      if (res.ok) {
+        currentUser = data;
+        enterApp();
+      } else {
+        showAlert(data.error || 'Código inválido ou expirado', 'danger');
+      }
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  function backToEmail() {
+    document.getElementById('loginStep2').style.display = 'none';
+    document.getElementById('loginStep1').style.display = 'block';
+    document.getElementById('loginCode').value = '';
+  }
+
+  // ─── Verificar sessão ao carregar ────────────────────────────────────────
+  (async () => {
+    try {
+      const { res, data } = await apiFetch('/me');
+      if (!res.ok) return;
+      currentUser = data;
+
+      // Lê sessionStorage ANTES de montar a tela para que os estados já estejam certos
+      let restoreExpiry = null;
+      if (currentUser.role !== 'admin') {
+        const saved = sessionStorage.getItem('s7_lock');
+        if (saved) {
+          const s         = JSON.parse(saved);
+          const remaining = s.expiresAt - Date.now();
+          if (remaining > 500) {
+            sessionActive         = true;
+            sessionCategoryLocked = true;
+            sessionSquad          = s.squad;
+            sessionReason         = s.reason;
+            activeCategory        = s.category;
+            restoreExpiry         = s.expiresAt;
+          } else {
+            sessionStorage.removeItem('s7_lock');
+          }
+        }
+      }
+
+      await enterApp();
+
+      // Se tinha sessão ativa, inicia o timer com o tempo restante
+      if (restoreExpiry) {
+        const bar  = document.getElementById('sessionCountdownBar');
+        const val  = document.getElementById('sessionCountdownValue');
+        let   secs = Math.max(1, Math.round((restoreExpiry - Date.now()) / 1000));
+        bar.style.display = 'flex';
+        val.textContent   = secs + 's';
+
+        // Bloqueia outras categorias na sidebar
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+          if (btn.dataset.cat !== activeCategory) {
+            btn.disabled      = true;
+            btn.style.opacity = '0.3';
+            btn.style.cursor  = 'not-allowed';
+          } else {
+            btn.classList.add('active');
+          }
+        });
+
+        sessionInterval = setInterval(() => {
+          secs--;
+          val.textContent = secs + 's';
+          if (secs <= 0) endCategoryLock();
+        }, 1000);
+
+        renderCards();
+      }
+    } catch { /* sem sessão, fica no login */ }
+  })();
+
+  // Enter nos campos de login
+  document.getElementById('loginEmail').addEventListener('keydown', e => { if (e.key === 'Enter') sendOTP(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && document.getElementById('loginStep2').style.display !== 'none') verifyOTP();
+  });
+
+  document.getElementById('btnLogout').addEventListener('click', async () => {
+    await apiFetch('/logout', { method: 'POST' });
+    currentUser = null;
+    allPasswords = [];
+    document.getElementById('appScreen').style.display  = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+  });
+
+  // ─── Categorias ───────────────────────────────────────────────────────────
+  const CAT_DISPLAY = {
+    'Automacao':    'Automação',
+    'Design & Midia': 'Design & Mídia',
+    'Educacao':     'Educação',
+  };
+  function catLabel(name) { return CAT_DISPLAY[name] || name; }
+
+  async function loadCategories() {
+    try {
+      const { res, data } = await apiFetch('/categories');
+      if (res.ok) {
+        allCategories = data;
+        renderSidebar();
+        populateCategorySelects();
+      }
+    } catch { /* silencioso */ }
+  }
+
+  function renderSidebar() {
+    const container = document.getElementById('sidebarCats');
+    container.innerHTML = '';
+
+    // "Todas" só para admin
+    if (currentUser?.role === 'admin') {
+      const allBtn = document.createElement('button');
+      allBtn.className = 'cat-btn' + (activeCategory === '' ? ' active' : '');
+      allBtn.dataset.cat = '';
+      allBtn.innerHTML = '<i class="bi bi-grid"></i> Todas';
+      allBtn.onclick = () => filterCat(allBtn, '');
+      container.appendChild(allBtn);
+    }
+
+    allCategories.forEach(cat => {
+      const info = CATEGORY_ICONS[cat] || { cls: 'other', icon: 'bi-folder' };
+      const btn = document.createElement('button');
+      btn.className = 'cat-btn' + (activeCategory === cat ? ' active' : '');
+      btn.dataset.cat = cat;
+      btn.innerHTML = `<i class="bi ${info.icon}"></i> ${catLabel(cat)}`;
+      btn.onclick = () => filterCat(btn, cat);
+      container.appendChild(btn);
+    });
+  }
+
+  function populateCategorySelects() {
+    ['apCategory', 'editCategory'].forEach(id => {
+      const sel = document.getElementById(id);
+      const current = sel.value;
+      // Mantém placeholder no apCategory
+      const hasPlaceholder = id === 'apCategory';
+      sel.innerHTML = hasPlaceholder ? '<option value="">Selecione...</option>' : '';
+      allCategories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = catLabel(cat);
+        sel.appendChild(opt);
+      });
+      if (current) sel.value = current;
+    });
+  }
+
+  // ─── App ──────────────────────────────────────────────────────────────────
+  async function enterApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('appScreen').style.display   = 'block';
+
+    document.getElementById('userChip').style.display = 'flex';
+    document.getElementById('userLabel').textContent  = currentUser.full_name || currentUser.username;
+    const rb = document.getElementById('roleLabel');
+    rb.textContent = currentUser.role === 'admin' ? 'ADMIN' : 'USER';
+    if (currentUser.role === 'admin') {
+      rb.classList.add('admin');
+      document.getElementById('btnAdmin').style.display = 'flex';
+    }
+
+    await loadCategories();
+    await loadPasswords();
+
+    if (currentUser.role === 'admin') {
+      document.getElementById('sidebarQuickAccess').style.display = 'block';
+    }
+
+    // Usuário comum: oculta elementos de admin
+    if (currentUser.role !== 'admin') {
+
+      if (sessionCategoryLocked) {
+        // Sessão restaurada do F5 — não esconde os cards
+        document.getElementById('noSessionState').style.display = 'none';
+        document.getElementById('selectCatState').style.display = 'none';
+      } else {
+        // Sem sessão ativa — tela vazia
+        document.getElementById('searchBarWrapper').style.display = 'none';
+        document.getElementById('cardsGrid').style.display        = 'none';
+        document.getElementById('noSessionState').style.display   = 'flex';
+      }
+    }
+  }
+
+  async function loadPasswords() {
+    try {
+      const { res, data } = await apiFetch('/passwords');
+      if (res.ok) { allPasswords = data; renderCards(); }
+      else showAlert('Erro ao carregar senhas', 'danger');
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  // ─── Cards ────────────────────────────────────────────────────────────────
+  function filterCat(btn, cat) {
+    // Usuário comum com sessão ativa e categoria já bloqueada: ignora cliques
+    if (currentUser?.role !== 'admin' && sessionCategoryLocked) return;
+
+    document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeCategory = cat;
+
+    // Usuário comum com sessão ativa: inicia o bloqueio de categoria
+    if (currentUser?.role !== 'admin' && sessionActive && !sessionCategoryLocked) {
+      lockCategory(cat);
+      return;
+    }
+
+    renderCards();
+  }
+
+  function renderCards() {
+    // Usuário comum só vê cards durante sessão ativa
+    if (currentUser?.role !== 'admin' && !sessionActive) return;
+
+    const term  = document.getElementById('searchInput').value.trim().toLowerCase();
+    const grid  = document.getElementById('cardsGrid');
+    grid.innerHTML = '';
+
+    const filtered = allPasswords.filter(p => {
+      const matchCat  = !activeCategory || p.category === activeCategory;
+      const matchTerm = !term || p.name.toLowerCase().includes(term) || (p.username || '').toLowerCase().includes(term);
+      return matchCat && matchTerm;
+    });
+
+    if (filtered.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.innerHTML = '<i class="bi bi-search"></i>Nenhum serviço encontrado';
+      grid.style.display = 'block';
+      grid.appendChild(empty);
+      return;
+    }
+
+    grid.style.display = '';
+    const isAdmin = currentUser?.role === 'admin';
+
+    filtered.forEach(p => {
+      const cat  = CATEGORY_ICONS[p.category] || CATEGORY_ICONS['Outros'];
+      const card = document.createElement('div');
+      card.className = 'pw-card';
+      card.addEventListener('click', () => openAccessModal(p));
+
+      const header = document.createElement('div');
+      header.className = 'pw-card-header';
+
+      const icon = document.createElement('div');
+      icon.className = `pw-icon ${cat.cls}`;
+      icon.innerHTML = `<i class="bi ${cat.icon}"></i>`;
+
+      const info = document.createElement('div');
+      info.style.flex = '1';
+      const name = document.createElement('div');
+      name.className = 'pw-name';
+      name.textContent = p.name;
+      info.appendChild(name);
+
+      if (isAdmin && p.username) {
+        const user = document.createElement('div');
+        user.className = 'pw-user';
+        user.textContent = p.username;
+        info.appendChild(user);
+      }
+
+      header.appendChild(icon);
+      header.appendChild(info);
+      card.appendChild(header);
+
+      if (isAdmin && p.notes) {
+        const note = document.createElement('div');
+        note.className = 'pw-note';
+        note.textContent = p.notes;
+        card.appendChild(note);
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  // ─── Sessão (usuário comum) ───────────────────────────────────────────────
+  function openSessionModal() {
+    document.getElementById('sessionName').value         = currentUser.full_name || currentUser.username;
+    document.getElementById('sessionSquadSelect').value  = '';
+    document.getElementById('sessionReasonInput').value  = '';
+    document.getElementById('sessionModal').style.display = 'flex';
+  }
+
+  function closeSessionModal(e) {
+    if (e && e.target !== document.getElementById('sessionModal')) return;
+    document.getElementById('sessionModal').style.display = 'none';
+  }
+
+  function startSession() {
+    const squad  = document.getElementById('sessionSquadSelect').value;
+    const reason = document.getElementById('sessionReasonInput').value.trim();
+    if (!squad) return showAlert('Selecione o squad', 'danger');
+
+    sessionActive         = true;
+    sessionCategoryLocked = false;
+    sessionSquad          = squad;
+    sessionReason         = reason;
+
+    document.getElementById('sessionModal').style.display   = 'none';
+    document.getElementById('noSessionState').style.display = 'none';
+
+    // Se já tinha uma categoria selecionada, vai direto para os cards
+    if (activeCategory) {
+      lockCategory(activeCategory);
+    } else {
+      document.getElementById('selectCatState').style.display = 'flex';
+    }
+  }
+
+  function lockCategory(cat, expiresAt = null) {
+    sessionCategoryLocked = true;
+    activeCategory        = cat;
+
+    const now       = Date.now();
+    const expiry    = expiresAt || (now + 30000);
+    const remaining = Math.max(0, Math.round((expiry - now) / 1000));
+
+    // Persiste no sessionStorage para sobreviver ao F5
+    sessionStorage.setItem('s7_lock', JSON.stringify({
+      squad: sessionSquad, reason: sessionReason,
+      category: cat, expiresAt: expiry
+    }));
+
+    document.getElementById('selectCatState').style.display   = 'none';
+    document.getElementById('noSessionState').style.display   = 'none';
+    document.getElementById('searchBarWrapper').style.display = '';
+    document.getElementById('cardsGrid').style.display        = '';
+
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      if (btn.dataset.cat !== cat) {
+        btn.disabled = true;
+        btn.style.opacity = '0.3';
+        btn.style.cursor  = 'not-allowed';
+      } else {
+        btn.classList.add('active');
+      }
+    });
+
+    const bar = document.getElementById('sessionCountdownBar');
+    const val = document.getElementById('sessionCountdownValue');
+    bar.style.display = 'flex';
+    val.textContent   = remaining + 's';
+
+    let secs = remaining;
+    sessionInterval = setInterval(() => {
+      secs--;
+      val.textContent = secs + 's';
+      if (secs <= 0) endCategoryLock();
+    }, 1000);
+
+    renderCards();
+  }
+
+  // Chamado quando o timer acaba — reset completo, exige novo squad/motivo
+  function endCategoryLock() {
+    clearInterval(sessionInterval);
+    sessionStorage.removeItem('s7_lock');
+    sessionActive         = false;
+    sessionCategoryLocked = false;
+    sessionSquad          = '';
+    sessionReason         = '';
+    sessionInterval       = null;
+    activeCategory        = '';
+
+    document.getElementById('accessModal').style.display         = 'none';
+    document.getElementById('sessionCountdownBar').style.display = 'none';
+    document.getElementById('selectCatState').style.display      = 'none';
+    document.getElementById('searchBarWrapper').style.display    = 'none';
+    document.getElementById('cardsGrid').style.display           = 'none';
+    document.getElementById('noSessionState').style.display      = 'flex';
+
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.disabled      = false;
+      btn.style.opacity = '';
+      btn.style.cursor  = '';
+      btn.classList.remove('active');
+    });
+  }
+
+  // Chamado no logout — encerra tudo
+  function endSession() {
+    clearInterval(sessionInterval);
+    sessionStorage.removeItem('s7_lock');
+    sessionActive         = false;
+    sessionCategoryLocked = false;
+    sessionSquad          = '';
+    sessionReason         = '';
+    sessionInterval       = null;
+    activeCategory        = '';
+
+    document.getElementById('accessModal').style.display         = 'none';
+    document.getElementById('sessionCountdownBar').style.display = 'none';
+    document.getElementById('selectCatState').style.display      = 'none';
+    document.getElementById('searchBarWrapper').style.display    = 'none';
+    document.getElementById('cardsGrid').style.display           = 'none';
+    document.getElementById('noSessionState').style.display      = 'flex';
+
+    document.querySelectorAll('.cat-btn').forEach(btn => {
+      btn.disabled      = false;
+      btn.style.opacity = '';
+      btn.style.cursor  = '';
+      btn.classList.remove('active');
+    });
+  }
+
+  // ─── Modal de Acesso ──────────────────────────────────────────────────────
+  function openAccessModal(entry) {
+    currentEntryId = entry.id;
+    document.getElementById('modalServiceName').textContent      = entry.name;
+    document.getElementById('accessResultSection').style.display = 'none';
+
+    if (currentUser.role !== 'admin' && sessionActive) {
+      // Usuário comum com sessão ativa: revela direto sem pedir squad de novo
+      document.getElementById('accessFormSection').style.display = 'none';
+      document.getElementById('accessFormFooter').style.display  = 'none';
+      document.getElementById('accessModal').style.display       = 'flex';
+      submitAccessDirect();
+    } else {
+      // Admin: fluxo normal com formulário
+      document.getElementById('accessName').value   = currentUser.full_name || currentUser.username;
+      document.getElementById('accessSquad').value  = '';
+      document.getElementById('accessReason').value = '';
+      document.getElementById('accessFormSection').style.display  = 'block';
+      document.getElementById('accessFormFooter').style.display   = 'flex';
+      document.getElementById('accessModal').style.display        = 'flex';
+    }
+  }
+
+  async function submitAccessDirect() {
+    try {
+      const { res, data } = await apiFetch('/access-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentEntryId, squad: sessionSquad, reason: sessionReason })
+      });
+      if (!res.ok) {
+        document.getElementById('accessModal').style.display = 'none';
+        return showAlert(data.error || 'Erro ao acessar', 'danger');
+      }
+      document.getElementById('revealUser').textContent = data.username || '—';
+      document.getElementById('revealPass').textContent = data.password;
+      document.getElementById('revealPass').classList.add('password-hidden');
+      document.getElementById('togglePassBtn').querySelector('i').className = 'bi bi-eye';
+      const urlEl = document.getElementById('revealUrl');
+      urlEl.textContent = data.url || '—';
+      document.getElementById('revealUrlRow').style.display   = data.url   ? '' : 'none';
+      document.getElementById('revealNotes').textContent      = data.notes || '';
+      document.getElementById('revealNotesRow').style.display = data.notes ? '' : 'none';
+      document.getElementById('accessCodeDisplay').textContent = data.access_code;
+      document.getElementById('countdownBar').style.display   = 'none';
+      document.getElementById('accessResultSection').style.display = 'block';
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  function closeAccessModal(e) {
+    if (e && e.target !== document.getElementById('accessModal')) return;
+    document.getElementById('accessModal').style.display = 'none';
+    currentEntryId = null;
+  }
+
+  async function submitAccess() {
+    const squad  = document.getElementById('accessSquad').value;
+    const reason = document.getElementById('accessReason').value.trim();
+
+    if (!squad) return showAlert('Selecione o squad', 'danger');
+
+    try {
+      const { res, data } = await apiFetch('/access-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: currentEntryId, squad, reason })
+      });
+
+      if (!res.ok) return showAlert(data.error || 'Erro ao acessar', 'danger');
+
+      // Preenche resultado com textContent — sem risco de XSS
+      document.getElementById('revealUser').textContent = data.username || '—';
+      document.getElementById('revealPass').textContent = data.password;
+      document.getElementById('revealPass').classList.add('password-hidden');
+      document.getElementById('togglePassBtn').querySelector('i').className = 'bi bi-eye';
+
+      const urlEl = document.getElementById('revealUrl');
+      urlEl.textContent = data.url || '—';
+      document.getElementById('revealUrlRow').style.display = data.url ? '' : 'none';
+
+      const notesEl = document.getElementById('revealNotes');
+      notesEl.textContent = data.notes || '';
+      document.getElementById('revealNotesRow').style.display = data.notes ? '' : 'none';
+
+      document.getElementById('accessCodeDisplay').textContent = data.access_code;
+
+      document.getElementById('accessFormSection').style.display  = 'none';
+      document.getElementById('accessFormFooter').style.display   = 'none';
+      document.getElementById('accessResultSection').style.display = 'block';
+
+      // Contador de 60s para usuário comum
+      if (currentUser?.role !== 'admin') {
+        const bar = document.getElementById('countdownBar');
+        const val = document.getElementById('countdownValue');
+        bar.style.display = 'flex';
+        let secs = 60;
+        val.textContent = secs + 's';
+        const timer = setInterval(() => {
+          secs--;
+          val.textContent = secs + 's';
+          if (secs <= 0) {
+            clearInterval(timer);
+            document.getElementById('accessModal').style.display = 'none';
+            currentEntryId = null;
+          }
+        }, 1000);
+      }
+
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  function togglePassword() {
+    const el  = document.getElementById('revealPass');
+    const ico = document.getElementById('togglePassBtn').querySelector('i');
+    if (el.classList.contains('password-hidden')) {
+      el.classList.remove('password-hidden');
+      ico.className = 'bi bi-eye-slash';
+    } else {
+      el.classList.add('password-hidden');
+      ico.className = 'bi bi-eye';
+    }
+  }
+
+  // ─── Admin Modal ──────────────────────────────────────────────────────────
+  function openAdmin()       { document.getElementById('adminModal').style.display = 'flex'; }
+  function closeAdminModal(e) {
+    if (e && e.target !== document.getElementById('adminModal')) return;
+    document.getElementById('adminModal').style.display = 'none';
+  }
+
+  function showAdminTab(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-pill').forEach(b => b.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+    btn.classList.add('active');
+  }
+
+  // Adicionar senha (admin)
+  document.getElementById('addPwForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      name:     document.getElementById('apName').value,
+      category: document.getElementById('apCategory').value,
+      username: document.getElementById('apUsername').value,
+      password: document.getElementById('apPassword').value,
+      url:      document.getElementById('apUrl').value,
+      notes:    document.getElementById('apNotes').value,
+    };
+    try {
+      const { res, data } = await apiFetch('/admin/add-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showAlert(data.message || data.error, res.ok ? 'success' : 'danger');
+      if (res.ok) { document.getElementById('addPwForm').reset(); await loadPasswords(); }
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  });
+
+  // Listar senhas (admin)
+  async function loadAdminPasswords() {
+    const el = document.getElementById('adminPasswordsContent');
+    try {
+      const { res, data } = await apiFetch('/admin/passwords');
+      if (!res.ok) { el.textContent = 'Erro ao carregar'; return; }
+      if (data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">Nenhuma senha cadastrada.</p>'; return; }
+
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      table.innerHTML = `<thead><tr><th>Nome</th><th>Categoria</th><th>Usuário</th><th>URL</th><th></th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      data.forEach(p => {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td'); tdName.textContent = p.name;
+        const tdCat  = document.createElement('td'); tdCat.textContent  = p.category;
+        const tdUser = document.createElement('td'); tdUser.textContent = p.username || '—';
+        const tdUrl  = document.createElement('td'); tdUrl.textContent  = p.url || '—';
+        const tdAct  = document.createElement('td');
+        tdAct.style.display = 'flex'; tdAct.style.gap = '0.4rem';
+
+        const editBtn = document.createElement('button');
+        editBtn.className = 'btn-icon';
+        editBtn.title = 'Editar';
+        editBtn.innerHTML = '<i class="bi bi-pencil" style="color:var(--cyan)"></i>';
+        editBtn.addEventListener('click', () => openEditModal(p));
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-danger-sm';
+        delBtn.textContent = 'Remover';
+        delBtn.addEventListener('click', async () => {
+          if (!confirm('Remover "' + p.name + '"?')) return;
+          const { res: dr } = await apiFetch(`/admin/passwords/${p.id}`, { method: 'DELETE' });
+          if (dr.ok) { showAlert('Removido', 'success'); await loadAdminPasswords(); await loadPasswords(); }
+          else showAlert('Erro ao remover', 'danger');
+        });
+
+        tdAct.appendChild(editBtn);
+        tdAct.appendChild(delBtn);
+        tr.append(tdName, tdCat, tdUser, tdUrl, tdAct);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      el.innerHTML = '';
+      el.appendChild(table);
+    } catch { el.textContent = 'Erro de conexão'; }
+  }
+
+  // Listar usuários (admin)
+  async function loadAdminUsers() {
+    const el = document.getElementById('adminUsersContent');
+    try {
+      const { res, data } = await apiFetch('/admin/users');
+      if (!res.ok) { el.textContent = 'Erro ao carregar'; return; }
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      table.innerHTML = `<thead><tr><th>Nome</th><th>E-mail</th><th>Departamento</th><th>Role</th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      data.forEach(u => {
+        const tr = document.createElement('tr');
+        const tdN = document.createElement('td'); tdN.textContent = u.full_name || '—';
+        const tdU = document.createElement('td'); tdU.textContent = u.username;
+        const tdD = document.createElement('td'); tdD.textContent = u.department;
+        const tdR = document.createElement('td'); tdR.textContent = u.role;
+        tr.append(tdN, tdU, tdD, tdR);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      el.innerHTML = '';
+      el.appendChild(table);
+    } catch { el.textContent = 'Erro de conexão'; }
+  }
+
+  // Auditoria (admin)
+  async function loadAdminAudit() {
+    const el = document.getElementById('adminAuditContent');
+    try {
+      const { res, data } = await apiFetch('/admin/audit');
+      if (!res.ok) { el.textContent = 'Erro ao carregar'; return; }
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      table.innerHTML = `<thead><tr><th>Data/Hora</th><th>Nome</th><th>Squad</th><th>Serviço</th><th>Código</th><th>IP</th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      data.forEach(l => {
+        const tr = document.createElement('tr');
+        const date = new Date(l.timestamp).toLocaleString('pt-BR');
+        const tds  = [date, l.full_name || l.username || '—', l.squad || '—', l.target || '—', l.access_code || '—', l.ip || '—'];
+        tds.forEach(v => { const td = document.createElement('td'); td.textContent = v; tr.appendChild(td); });
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      el.innerHTML = '';
+      el.appendChild(table);
+    } catch { el.textContent = 'Erro de conexão'; }
+  }
+
+  // ─── Modal Edição ─────────────────────────────────────────────────────────
+  function openEditModal(p) {
+    document.getElementById('editId').value       = p.id;
+    document.getElementById('editName').value     = p.name;
+    document.getElementById('editCategory').value = p.category;
+    document.getElementById('editUsername').value = p.username || '';
+    document.getElementById('editPassword').value = '';
+    document.getElementById('editUrl').value      = p.url || '';
+    document.getElementById('editNotes').value    = p.notes || '';
+    document.getElementById('editModal').style.display = 'flex';
+  }
+
+  function closeEditModal(e) {
+    if (e && e.target !== document.getElementById('editModal')) return;
+    document.getElementById('editModal').style.display = 'none';
+  }
+
+  async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const payload = {
+      name:     document.getElementById('editName').value,
+      category: document.getElementById('editCategory').value,
+      username: document.getElementById('editUsername').value,
+      password: document.getElementById('editPassword').value,
+      url:      document.getElementById('editUrl').value,
+      notes:    document.getElementById('editNotes').value,
+    };
+    try {
+      const { res, data } = await apiFetch(`/admin/passwords/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showAlert(data.message || data.error, res.ok ? 'success' : 'danger');
+      if (res.ok) {
+        document.getElementById('editModal').style.display = 'none';
+        await loadAdminPasswords();
+        await loadPasswords();
+      }
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  }
+
+  // Gerenciar categorias (admin)
+  async function loadAdminCategories() {
+    const el = document.getElementById('adminCategoriesContent');
+    try {
+      const { res, data } = await apiFetch('/categories');
+      if (!res.ok) { el.textContent = 'Erro ao carregar'; return; }
+      if (data.length === 0) { el.innerHTML = '<p style="color:var(--muted)">Nenhuma categoria cadastrada.</p>'; return; }
+
+      const table = document.createElement('table');
+      table.className = 'admin-table';
+      table.innerHTML = `<thead><tr><th>Nome</th><th>Label</th><th></th></tr></thead>`;
+      const tbody = document.createElement('tbody');
+      data.forEach(cat => {
+        const tr = document.createElement('tr');
+        const tdName  = document.createElement('td'); tdName.textContent = cat;
+        const tdLabel = document.createElement('td'); tdLabel.textContent = catLabel(cat);
+        tdLabel.style.color = 'var(--muted)';
+        const tdAct = document.createElement('td');
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-danger-sm';
+        delBtn.textContent = 'Remover';
+        delBtn.addEventListener('click', async () => {
+          if (!confirm('Remover categoria "' + cat + '"? As senhas nesta categoria não serão removidas.')) return;
+          const { res: dr } = await apiFetch(`/admin/categories/${encodeURIComponent(cat)}`, { method: 'DELETE' });
+          if (dr.ok) {
+            showAlert('Categoria removida', 'success');
+            await loadCategories();
+            await loadAdminCategories();
+          } else {
+            showAlert('Erro ao remover', 'danger');
+          }
+        });
+
+        tdAct.appendChild(delBtn);
+        tr.append(tdName, tdLabel, tdAct);
+        tbody.appendChild(tr);
+      });
+      table.appendChild(tbody);
+      el.innerHTML = '';
+      el.appendChild(table);
+    } catch { el.textContent = 'Erro de conexão'; }
+  }
+
+  document.getElementById('addCatForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const name = document.getElementById('catName').value.trim();
+    if (!name) return;
+    try {
+      const { res, data } = await apiFetch('/admin/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name })
+      });
+      showAlert(data.message || data.error, res.ok ? 'success' : 'danger');
+      if (res.ok) {
+        document.getElementById('catName').value = '';
+        await loadCategories();
+        await loadAdminCategories();
+      }
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  });
+
+  // Criar usuário (admin)
+  document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+      username:   document.getElementById('nuUsername').value,
+      full_name:  document.getElementById('nuFullName').value,
+      department: document.getElementById('nuDept').value,
+    };
+    try {
+      const { res, data } = await apiFetch('/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      showAlert(data.message || data.error, res.ok ? 'success' : 'danger');
+      if (res.ok) document.getElementById('createUserForm').reset();
+    } catch { showAlert('Erro de conexão', 'danger'); }
+  });
+</script>
+</body>
+</html>

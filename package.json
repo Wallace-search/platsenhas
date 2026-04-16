@@ -1,0 +1,32 @@
+{
+  "name": "password-security-platform",
+  "version": "1.0.0",
+  "description": "A secure password management platform with departmental access and keyword-based decryption",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "nodemon backend/server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.2",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "dotenv": "^16.6.1",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.3.2",
+    "jsonwebtoken": "^9.0.2",
+    "resend": "^3.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "password",
+    "security",
+    "platform"
+  ],
+  "author": "",
+  "license": "ISC"
+}

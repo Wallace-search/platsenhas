@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"netstat -ano | findstr :3000\")",
+      "Bash(cmd /c \"netstat -ano | findstr LISTEN | findstr :3000\")",
+      "Bash(cmd /c \"for /f \\\\\"tokens=5\\\\\" %a in \\('netstat -aon ^| findstr :3000'\\) do echo %a\")",
+      "Bash(cmd /c \"taskkill /F /IM node.exe 2>&1\")"
+    ]
+  }
+}

@@ -865,6 +865,13 @@
             <label>Departamento</label>
             <input class="form-control-dark" type="text" id="nuDept" placeholder="Ex: TI" required>
           </div>
+          <div class="form-group">
+            <label>Nível de acesso</label>
+            <select class="form-control-dark" id="nuRole">
+              <option value="user">Usuário comum</option>
+              <option value="admin">Administrador</option>
+            </select>
+          </div>
           <button class="btn-primary-dark" type="submit">Criar usuário</button>
         </form>
       </div>
@@ -1740,6 +1747,7 @@
       username:   document.getElementById('nuUsername').value,
       full_name:  document.getElementById('nuFullName').value,
       department: document.getElementById('nuDept').value,
+      role:       document.getElementById('nuRole').value,
     };
     try {
       const { res, data } = await apiFetch('/register', {

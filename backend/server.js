@@ -313,14 +313,15 @@ app.post('/access-password', authenticateJWT, async (req, res) => {
 
 app.post('/register', authenticateJWT, ensureAdmin, async (req, res) => {
   try {
-    const { username, full_name, department } = req.body;
+    const { username, full_name, department, role } = req.body;
     if (!username || !full_name || !department) {
       return res.status(400).json({ error: 'username, full_name e department sao obrigatorios' });
     }
+    const validRole = role === 'admin' ? 'admin' : 'user';
     const { data: existing } = await supabase.from('users').select('id').eq('username', username).single();
     if (existing) return res.status(409).json({ error: 'Usuario ja existe' });
 
-    const { error } = await supabase.from('users').insert({ username, full_name, department });
+    const { error } = await supabase.from('users').insert({ username, full_name, department, role: validRole });
     if (error) throw error;
     res.json({ message: 'Usuario criado com sucesso' });
   } catch {

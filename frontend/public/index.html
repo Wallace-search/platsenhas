@@ -1595,7 +1595,7 @@
       if (!res.ok) { el.textContent = 'Erro ao carregar'; return; }
       const table = document.createElement('table');
       table.className = 'admin-table';
-      table.innerHTML = `<thead><tr><th>Nome</th><th>E-mail</th><th>Departamento</th><th>Role</th></tr></thead>`;
+      table.innerHTML = `<thead><tr><th>Nome</th><th>E-mail</th><th>Departamento</th><th>Role</th><th></th></tr></thead>`;
       const tbody = document.createElement('tbody');
       data.forEach(u => {
         const tr = document.createElement('tr');
@@ -1603,7 +1603,20 @@
         const tdU = document.createElement('td'); tdU.textContent = u.username;
         const tdD = document.createElement('td'); tdD.textContent = u.department;
         const tdR = document.createElement('td'); tdR.textContent = u.role;
-        tr.append(tdN, tdU, tdD, tdR);
+        const tdA = document.createElement('td');
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-danger-sm';
+        delBtn.textContent = 'Remover';
+        delBtn.addEventListener('click', async () => {
+          if (!confirm('Remover usuário "' + u.full_name + '"?')) return;
+          const { res: dr, data: dd } = await apiFetch(`/admin/users/${u.id}`, { method: 'DELETE' });
+          if (dr.ok) { showAlert('Usuário removido', 'success'); await loadAdminUsers(); }
+          else showAlert(dd.error || 'Erro ao remover', 'danger');
+        });
+
+        tdA.appendChild(delBtn);
+        tr.append(tdN, tdU, tdD, tdR, tdA);
         tbody.appendChild(tr);
       });
       table.appendChild(tbody);

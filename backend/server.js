@@ -365,6 +365,19 @@ app.get('/admin/users', authenticateJWT, ensureAdmin, async (req, res) => {
   }
 });
 
+app.delete('/admin/users/:id', authenticateJWT, ensureAdmin, async (req, res) => {
+  try {
+    if (req.params.id === req.user.id) {
+      return res.status(400).json({ error: 'Voce nao pode excluir sua propria conta' });
+    }
+    const { error } = await supabase.from('users').delete().eq('id', req.params.id);
+    if (error) throw error;
+    res.json({ message: 'Usuario removido' });
+  } catch {
+    res.status(500).json({ error: 'Erro ao remover usuario' });
+  }
+});
+
 app.get('/admin/passwords', authenticateJWT, ensureAdmin, async (req, res) => {
   try {
     const { data, error } = await supabase

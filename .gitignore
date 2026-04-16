@@ -3,6 +3,9 @@
 .env.local
 .env.*
 
+# Scripts de seed — contém senhas reais em texto puro
+seed-passwords.js
+
 # Dependências
 node_modules/
 
